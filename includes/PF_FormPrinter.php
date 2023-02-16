@@ -992,8 +992,10 @@ END;
 				$brackets_end_loc = strpos( $section, "}}}", $brackets_loc );
 				// For cases with more than 3 ending brackets,
 				// take the last 3 ones as the tag end.
-				while ( $section[$brackets_end_loc + 3] == "}" ) {
-					$brackets_end_loc++;
+				if ( isset ( $section[$brackets_end_loc + 3 ] ) ) {
+					while ( $section[$brackets_end_loc + 3] == "}" ) {
+						$brackets_end_loc++;
+					}
 				}
 				$bracketed_string = substr( $section, $brackets_loc + 3, $brackets_end_loc - ( $brackets_loc + 3 ) );
 				$tag_components = PFUtils::getFormTagComponents( $bracketed_string );
@@ -1310,6 +1312,15 @@ END;
 								}
 							}
 							$cur_value = $form_field->valueStringToLabels( $cur_value, $delimiter );
+							
+							// The cur_value consists of a list of title names, not the display names, so
+							// we generate a new array with title objects, so we can use them to get the display names.
+							$cur_values = array_map( function( $item ) {
+								return Title::newFromText( trim( $item ) );
+							}, explode( $delimiter ?? ",", $cur_value ) );
+							$cur_values_displayTitles = PFValuesUtils::getDisplayTitles( $cur_values );
+							// Finally disambiguate the labels for the form.
+							$cur_value = implode( $delimiter ?? ",", PFValuesUtils::disambiguateLabels( $cur_values_displayTitles ) );
 						}
 
 						// Call hooks - unfortunately this has to be split into two
