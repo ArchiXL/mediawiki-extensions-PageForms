@@ -1320,12 +1320,12 @@ END;
 								return Title::newFromText( trim( $title_value ) );
 							}, explode( $delimiter ?? ",", $original_value ) );
 
-							if ( is_array( $cur_values_titles ) && count ( $cur_values_titles ) > 0 ) {
+							if ( count ( $cur_values_titles ) > 0 ) {
 								$cur_values_titles = array_filter( $cur_values_titles, function ( $title ) {
 									return $title instanceof Title && $title->exists();
 								} );
 								$cur_values_display_titles = PFValuesUtils::getDisplayTitles( $cur_values_titles );
-								$cur_values_disambiguated_titles = PFValuesUtils::disambiguateLabels( $cur_values_display_titles );
+								$cur_values_disambiguated_titles = PFValuesUtils::disambiguateLabels( (array) $cur_values_display_titles );
 								$possible_values = $form_field->getPossibleValues();
 
 								// The used display title in the possible values can still occur more than once,
