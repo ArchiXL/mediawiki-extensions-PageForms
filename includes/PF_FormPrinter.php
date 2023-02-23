@@ -1311,13 +1311,14 @@ END;
 									$delimiter = null;
 								}
 							}
-							$cur_value = $form_field->valueStringToLabels( $cur_value, $delimiter );
+							$original_value = $cur_value;
+							$cur_value = $form_field->valueStringToLabels( $original_value, $delimiter );
 							
 							// The cur_value consists of a list of title names, not the display names, so
 							// we generate a new array with title objects, so we can use them to get the display names.
 							$cur_values_titles = array_map( function( $title_value ) {
 								return Title::newFromText( trim( $title_value ) );
-							}, explode( $delimiter ?? ",", $cur_value ) );
+							}, explode( $delimiter ?? ",", $original_value ) );
 
 							if ( is_array( $cur_values_titles ) && count ( $cur_values_titles ) > 0 ) {
 								$cur_values_titles = array_filter( $cur_values_titles, function ( $title ) {
