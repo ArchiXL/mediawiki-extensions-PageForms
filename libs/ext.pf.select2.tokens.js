@@ -421,10 +421,11 @@
 				if (data.pfautocomplete !== undefined) {
 					$( '#loading-' + input_id ).hide();
 					data.pfautocomplete.forEach( function(item) {
-						item.id = item.title;
 						if (item.displaytitle !== undefined) {
+							item.id = item.displaytitle;
 							item.text = item.displaytitle;
 						} else {
+							item.id = item.title;
 							item.text = item.title;
 						}
 					});
