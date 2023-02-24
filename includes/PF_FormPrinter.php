@@ -1320,7 +1320,7 @@ END;
 								return Title::newFromText( trim( $title_value ) );
 							}, explode( $delimiter ?? ",", $original_value ) );
 
-							if ( count ( $cur_values_titles ) > 0 ) {
+							if ( count ( $cur_values_titles ) > 0 && !$form_field->hasFieldArg('reverselookup') ) {
 								$cur_values_titles = array_filter( $cur_values_titles, function ( $title ) {
 									return $title instanceof Title && $title->exists();
 								} );
@@ -1339,6 +1339,13 @@ END;
 
 								// Finally disambiguate the labels for the form.
 								$cur_value = implode( $delimiter ?? ",", $cur_values_disambiguated_titles );
+
+							// If reverse lookup is enabled, we need to add the page name in parentheses.
+							} else if ( $form_field->hasFieldArg('reverselookup') ) {
+								$cur_values_display_titles = PFValuesUtils::getDisplayTitles( $cur_values_titles );
+								$cur_value = implode( $delimiter ?? ",", array_map( function( $title, $displaytitle ) {
+									return "$displaytitle ($title)";
+								}, array_keys( $cur_values_display_titles ), array_values( $cur_values_display_titles ) ) );
 							}
 						}
 

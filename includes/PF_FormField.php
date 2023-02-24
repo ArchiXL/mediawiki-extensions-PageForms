@@ -405,7 +405,16 @@ class PFFormField {
 		$f->setPossibleValues( $valuesSourceType, $valuesSource, $values, $cargo_table, $cargo_field, $cargo_where );
 
 		$mappingType = null;
-		if ( array_key_exists( 'mapping template', $f->mFieldArgs ) ) {
+		if ( $f->mUseDisplayTitle && count( $f->mPossibleValues ) + 1 > PFValuesUtils::getMaxValuesToRetrieve() ) {
+			$f->mFieldArgs['reverselookup'] = true;
+			$mappingType = '';
+			$wasPosted = MediaWikiServices::getInstance()->getAuthManager()->getRequest()->wasPosted();
+			$formValues = $wasPosted ? $template_in_form->getValuesFromSubmit() : $template_in_form->getValuesFromPage();
+			$formValues = $formValues[ $field_name ] ?? [];
+			$formValues = is_string( $formValues ) ? explode( $f->mFieldArgs['delimiter'], $formValues ) : $formValues;
+			$formValues = array_map( 'trim', $formValues );
+			$f->mPossibleValues = PFValuesUtils::getLabelsFromDisplayTitle( $formValues, $wasPosted );
+		} else if ( array_key_exists( 'mapping template', $f->mFieldArgs ) ) {
 			$mappingType = 'template';
 		} elseif ( array_key_exists( 'mapping property', $f->mFieldArgs ) ) {
 			$mappingType = 'property';

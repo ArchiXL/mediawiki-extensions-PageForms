@@ -754,7 +754,7 @@ SERVICE wikibase:label { bd:serviceParam wikibase:language \"" . $wgLanguageCode
 	public static function getRemoteDataTypeAndPossiblySetAutocompleteValues( $autocompleteFieldType, $autocompletionSource, $field_args, $autocompleteSettings ) {
 		global $wgPageFormsMaxLocalAutocompleteValues, $wgPageFormsAutocompleteValues;
 
-		if ( $autocompleteFieldType == 'external_url' || $autocompleteFieldType == 'wikidata' ) {
+		if ( $autocompleteFieldType == 'external_url' || $autocompleteFieldType == 'wikidata' || array_key_exists( 'reverselookup', $field_args )  ) {
 			// Autocompletion from URL is always done remotely.
 			return $autocompleteFieldType;
 		}
@@ -1055,4 +1055,40 @@ SERVICE wikibase:label { bd:serviceParam wikibase:language \"" . $wgLanguageCode
 		array_unshift( $values, $shortestString );
 		return $values;
 	}
+
+	/**
+	 * @return array
+	 */
+	public static function getLabelsFromDisplayTitle( array $values, $doReverseLookup = false ) {
+		$labels = [];
+		foreach ( $values as $value ) {
+			if ( trim ( $value ) === "" ) {
+				continue;
+			}
+			if ( $doReverseLookup ) {
+				// The regex matches every 'real' page inside the last brackets; for example
+				//  'Privacy (doel) (Privacy (doel)concept)',
+				//  'Pagina (doel) (Pagina)',
+				// will match on (Privacy (doel)concept), (Pagina), ect
+				if ( ! preg_match_all('/\((?:[^)(]*(?R)?)*+\)/', $value, $matches) )  {
+					// If no matches where found, just leave the value as is
+					continue;
+				} else {
+					$firstMatch = reset( $matches );
+					// The actual match is always in the last group
+					$realPage = end( $firstMatch );
+					// The match still contains the first ( and last ) character, remove them
+					$realPage = substr( $realPage, 1 );
+					// Finally set the actual value
+					$value = substr( $realPage, 0, -1 );
+				}
+
+			}
+			$displayTitle = self::getDisplayTitles([ Title::newFromText( $value ) ] );
+			$displayTitle = reset( $displayTitle );
+			$labels[ $value ] = ( $displayTitle && $displayTitle !== $value ) ? $displayTitle . " ($value)" : $value;
+		}
+		return self::disambiguateLabels( $labels );
+	}
+
 }

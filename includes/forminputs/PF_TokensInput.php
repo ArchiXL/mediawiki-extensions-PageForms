@@ -163,6 +163,9 @@ class PFTokensInput extends PFFormInput {
 		if ( array_key_exists( 'max values', $other_args ) ) {
 			$inputAttrs['maxvalues'] = $other_args['max values'];
 		}
+		if( array_key_exists( 'reverselookup', $other_args ) ) {
+			$inputAttrs['reverselookup'] = 'true';
+		}
 
 		// This code adds predefined tokens in the form of <options>
 

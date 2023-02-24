@@ -376,6 +376,7 @@
 	 */
 	tokens_proto.getAjaxOpts = function() {
 		var input_id = this.id;
+		var reverse_lookup = $('#' + this.id).attr('reverselookup') === 'true';
 		var autocomplete_opts = this.getAutocompleteOpts();
 		var data_source = autocomplete_opts.autocompletesettings.split(',')[0];
 		var my_server = mw.util.wikiScript( 'api' );
@@ -421,7 +422,14 @@
 				if (data.pfautocomplete !== undefined) {
 					$( '#loading-' + input_id ).hide();
 					data.pfautocomplete.forEach( function(item) {
-						if (item.displaytitle !== undefined) {
+						if (item.displaytitle !== undefined && reverse_lookup) {
+							var currentDisplayTitle = item.displaytitle;
+							if ( currentDisplayTitle.indexOf("(") === -1 && currentDisplayTitle.indexOf(")") == -1 ) {
+								currentDisplayTitle += " ("+ item.title +")";
+							}
+							item.id = currentDisplayTitle;
+							item.text = currentDisplayTitle;
+						} else if (item.displaytitle !== undefined) {
 							item.id = item.displaytitle;
 							item.text = item.displaytitle;
 						} else {
