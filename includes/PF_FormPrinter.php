@@ -1344,7 +1344,7 @@ END;
 							} else if ( $form_field->hasFieldArg('reverselookup') ) {
 								$cur_values_display_titles = PFValuesUtils::getDisplayTitles( $cur_values_titles );
 								$cur_value = implode( $delimiter ?? ",", array_map( function( $title, $displaytitle ) {
-									return "$displaytitle ($title)";
+									return $displaytitle !== $title ? "$displaytitle ($title)" : $title;
 								}, array_keys( $cur_values_display_titles ), array_values( $cur_values_display_titles ) ) );
 							}
 						}
