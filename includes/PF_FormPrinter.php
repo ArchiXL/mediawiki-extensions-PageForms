@@ -1320,10 +1320,11 @@ END;
 								return Title::newFromText( trim( $title_value ) );
 							}, explode( $delimiter ?? ",", $original_value ) );
 
+							$cur_values_titles = array_filter( $cur_values_titles, function ( $title ) {
+								return $title instanceof Title && $title->exists();
+							} );
+
 							if ( count ( $cur_values_titles ) > 0 && !$form_field->hasFieldArg('reverselookup') ) {
-								$cur_values_titles = array_filter( $cur_values_titles, function ( $title ) {
-									return $title instanceof Title && $title->exists();
-								} );
 								$cur_values_display_titles = PFValuesUtils::getDisplayTitles( $cur_values_titles );
 								$cur_values_disambiguated_titles = PFValuesUtils::disambiguateLabels( (array) $cur_values_display_titles );
 								$possible_values = $form_field->getPossibleValues();
@@ -1341,7 +1342,7 @@ END;
 								$cur_value = implode( $delimiter ?? ",", $cur_values_disambiguated_titles );
 
 							// If reverse lookup is enabled, we need to add the page name in parentheses.
-							} else if ( $form_field->hasFieldArg('reverselookup') ) {
+							} else if ( count ( $cur_values_titles ) > 0 && $form_field->hasFieldArg('reverselookup') ) {
 								$cur_values_display_titles = PFValuesUtils::getDisplayTitles( $cur_values_titles );
 								$cur_value = implode( $delimiter ?? ",", array_map( function( $title, $displaytitle ) {
 									return $displaytitle !== $title ? "$displaytitle ($title)" : $title;
