@@ -1190,9 +1190,4 @@ class PFFormField {
 		return $other_args;
 	}
 
-	public function mapReverseLookupValues( $values, $delimiter ) {
-		var_dump( $values, $delimiter );
-		var_dump( $values );
-		die;
-	}
 }
