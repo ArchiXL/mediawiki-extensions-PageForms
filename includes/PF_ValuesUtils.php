@@ -754,7 +754,7 @@ SERVICE wikibase:label { bd:serviceParam wikibase:language \"" . $wgLanguageCode
 	public static function getRemoteDataTypeAndPossiblySetAutocompleteValues( $autocompleteFieldType, $autocompletionSource, $field_args, $autocompleteSettings ) {
 		global $wgPageFormsMaxLocalAutocompleteValues, $wgPageFormsAutocompleteValues;
 
-		if ( $autocompleteFieldType == 'external_url' || $autocompleteFieldType == 'wikidata' || array_key_exists( 'reverselookup', $field_args )  ) {
+		if ( $autocompleteFieldType == 'external_url' || $autocompleteFieldType == 'wikidata' || array_key_exists( 'force remote autocomplete', $field_args )  ) {
 			// Autocompletion from URL is always done remotely.
 			return $autocompleteFieldType;
 		}
@@ -821,12 +821,24 @@ SERVICE wikibase:label { bd:serviceParam wikibase:language \"" . $wgLanguageCode
 	 * @param string $delimiter
 	 * @return string[]
 	 */
-	public static function getValuesArray( $value, $delimiter ) {
+	public static function getValuesArray( $value, $delimiter, $isReverseLookup = false ) {
 		if ( is_array( $value ) ) {
 			return $value;
 		} else {
-			// Remove extra spaces.
-			return array_map( 'trim', explode( $delimiter, $value ) );
+			$exploder = $isReverseLookup ? ")$delimiter" : $delimiter;
+			$value = trim( $value );
+			if ( $value == '' ) {
+				return [];
+			}
+
+			// Removes extra spaces, and adds a closing parenthesis if needed.
+			return array_map( function( $value ) use ( $isReverseLookup ) {
+				$value = trim( $value );
+				if ( $isReverseLookup && substr( $value, -1 ) !== ')' ) {
+					$value .= ')';
+				}
+				return trim( $value );
+			}, explode( $exploder, $value ) );
 		}
 	}
 

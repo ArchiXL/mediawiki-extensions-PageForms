@@ -405,16 +405,7 @@ class PFFormField {
 		$f->setPossibleValues( $valuesSourceType, $valuesSource, $values, $cargo_table, $cargo_field, $cargo_where );
 
 		$mappingType = null;
-		if ( $f->mUseDisplayTitle && count( $f->mPossibleValues ) + 1 > PFValuesUtils::getMaxValuesToRetrieve() ) {
-			$f->mFieldArgs['reverselookup'] = true;
-			$mappingType = '';
-			$wasPosted = MediaWikiServices::getInstance()->getAuthManager()->getRequest()->wasPosted();
-			$formValues = $wasPosted ? $template_in_form->getValuesFromSubmit() : $template_in_form->getValuesFromPage();
-			$formValues = $formValues[ $field_name ] ?? [];
-			$formValues = is_string( $formValues ) ? explode( $f->mFieldArgs['delimiter'], $formValues ) : $formValues;
-			$formValues = array_map( 'trim', $formValues );
-			$f->mPossibleValues = PFValuesUtils::getLabelsFromDisplayTitle( $formValues, $wasPosted );
-		} else if ( array_key_exists( 'mapping template', $f->mFieldArgs ) ) {
+		if ( array_key_exists( 'mapping template', $f->mFieldArgs ) ) {
 			$mappingType = 'template';
 		} elseif ( array_key_exists( 'mapping property', $f->mFieldArgs ) ) {
 			$mappingType = 'property';
@@ -422,7 +413,27 @@ class PFFormField {
 			array_key_exists( 'mapping cargo field', $f->mFieldArgs ) ) {
 			$mappingType = 'cargo field';
 		} elseif ( $f->mUseDisplayTitle ) {
-			$f->mPossibleValues = PFValuesUtils::disambiguateLabels( $f->mPossibleValues );
+			$f->setFieldArg('reverselookup', true);
+			$mappingType = '';
+			$wasPosted = MediaWikiServices::getInstance()->getAuthManager()->getRequest()->wasPosted();
+			// This part is kind of a hack, since possible values are already fetched but this
+			// forces remote autocompletion to be used whenever the values are more than the allowed limit.
+			if ( count( $f->mPossibleValues ) + 1 > PFValuesUtils::getMaxValuesToRetrieve() ) {
+				$f->setFieldArg('force remote autocomplete', true);
+				$formValues = $wasPosted ? $template_in_form->getValuesFromSubmit() : $template_in_form->getValuesFromPage();
+				$formValues = $formValues[ $field_name ] ?? [];
+				$formValues = is_string( $formValues ) ? explode( $f->mFieldArgs['delimiter'], $formValues ) : $formValues;
+				$formValues = array_map( 'trim', $formValues );
+				// Note we only allow the form values that are posted or set as a value in the page.
+				// @note might do a better job and check if the value is allowed?
+				$f->mPossibleValues = PFValuesUtils::getLabelsFromDisplayTitle( $formValues, $wasPosted );
+			} else {
+				// We always map the values to "displaytitle (actual pagename)"
+				foreach ( $f->mPossibleValues as $title => $display_title ) {
+					$f->mPossibleValues[$title] = "$display_title ($title)";
+				}
+				$f->mPossibleValues = PFValuesUtils::getLabelsFromDisplayTitle( $f->mPossibleValues, $wasPosted );
+			}
 		}
 
 		if ( $mappingType !== null && !empty( $f->mPossibleValues ) ) {
@@ -851,6 +862,22 @@ class PFFormField {
 				}
 			}
 		}
+
+		if ( $this->hasFieldArg( 'reverselookup' ) ) {
+			$labels = array_map( function( $titleString ) {
+				$titleString = trim( $titleString );
+				$title = Title::newFromText( $titleString );
+				if ( $title instanceof Title && $title->exists() ) {
+					$displayTitles = PFValuesUtils::getDisplayTitles( [ $title ] );
+					$displayTitle = reset( $displayTitles );
+					if ( $displayTitle !== $titleString ) {
+						$titleString = "$displayTitle ($titleString)";
+					}
+				}
+				return $titleString;
+			}, explode( $this->mFieldArgs['delimiter'], $valueString ) );
+		}
+
 		if ( count( $labels ) > 1 ) {
 			return $labels;
 		} else {
@@ -1161,5 +1188,11 @@ class PFFormField {
 		}
 
 		return $other_args;
+	}
+
+	public function mapReverseLookupValues( $values, $delimiter ) {
+		var_dump( $values, $delimiter );
+		var_dump( $values );
+		die;
 	}
 }

@@ -169,7 +169,7 @@ class PFTokensInput extends PFFormInput {
 
 		// This code adds predefined tokens in the form of <options>
 
-		$cur_values = PFValuesUtils::getValuesArray( $cur_value, $delimiter );
+		$cur_values = PFValuesUtils::getValuesArray( $cur_value, $delimiter, array_key_exists( 'reverselookup', $other_args) );
 		$optionsText = '';
 
 		$possible_values = $other_args['possible_values'];

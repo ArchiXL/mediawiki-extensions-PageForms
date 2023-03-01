@@ -1311,43 +1311,7 @@ END;
 									$delimiter = null;
 								}
 							}
-							$original_value = $cur_value;
-							$cur_value = $form_field->valueStringToLabels( $original_value, $delimiter );
-							
-							// The cur_value consists of a list of title names, not the display names, so
-							// we generate a new array with title objects, so we can use them to get the display names.
-							$cur_values_titles = array_map( function( $title_value ) {
-								return Title::newFromText( trim( $title_value ) );
-							}, explode( $delimiter ?? ",", $original_value ) );
-
-							$cur_values_titles = array_filter( $cur_values_titles, function ( $title ) {
-								return $title instanceof Title && $title->exists();
-							} );
-
-							if ( count ( $cur_values_titles ) > 0 && !$form_field->hasFieldArg('reverselookup') ) {
-								$cur_values_display_titles = PFValuesUtils::getDisplayTitles( $cur_values_titles );
-								$cur_values_disambiguated_titles = PFValuesUtils::disambiguateLabels( (array) $cur_values_display_titles );
-								$possible_values = $form_field->getPossibleValues();
-
-								// The used display title in the possible values can still occur more than once,
-								// thus we overwrite the disambiguated display title with the one in the possible
-								// value to maintain the field from having the wrong value.
-								foreach ( $cur_values_disambiguated_titles as $title => $display_title ) {
-									if ( array_key_exists( $title, $possible_values ) ) {
-										$cur_values_disambiguated_titles[$title] = $possible_values[$title];
-									}
-								}
-
-								// Finally disambiguate the labels for the form.
-								$cur_value = implode( $delimiter ?? ",", $cur_values_disambiguated_titles );
-
-							// If reverse lookup is enabled, we need to add the page name in parentheses.
-							} else if ( count ( $cur_values_titles ) > 0 && $form_field->hasFieldArg('reverselookup') ) {
-								$cur_values_display_titles = PFValuesUtils::getDisplayTitles( $cur_values_titles );
-								$cur_value = implode( $delimiter ?? ",", array_map( function( $title, $displaytitle ) {
-									return $displaytitle !== $title ? "$displaytitle ($title)" : $title;
-								}, array_keys( $cur_values_display_titles ), array_values( $cur_values_display_titles ) ) );
-							}
+							$cur_value = $form_field->valueStringToLabels( $cur_value, $delimiter );
 						}
 
 						// Call hooks - unfortunately this has to be split into two
