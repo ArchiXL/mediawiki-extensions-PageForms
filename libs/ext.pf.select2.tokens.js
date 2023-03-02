@@ -422,11 +422,8 @@
 				if (data.pfautocomplete !== undefined) {
 					$( '#loading-' + input_id ).hide();
 					data.pfautocomplete.forEach( function(item) {
-						if (item.displaytitle !== undefined && reverse_lookup) {
-							var currentDisplayTitle = item.displaytitle;
-							if ( currentDisplayTitle.indexOf("(") === -1 && currentDisplayTitle.indexOf(")") == -1 ) {
-								currentDisplayTitle += " ("+ item.title +")";
-							}
+						if (item.displaytitle !== undefined && reverse_lookup && item.displaytitle !== item.title ) {
+							var currentDisplayTitle = item.displaytitle + " ("+ item.title +")";
 							item.id = currentDisplayTitle;
 							item.text = currentDisplayTitle;
 						} else if (item.displaytitle !== undefined) {

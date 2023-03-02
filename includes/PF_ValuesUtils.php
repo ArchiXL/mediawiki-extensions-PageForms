@@ -830,15 +830,16 @@ SERVICE wikibase:label { bd:serviceParam wikibase:language \"" . $wgLanguageCode
 			if ( $value == '' ) {
 				return [];
 			}
+			$values = explode( $exploder, $value );
 
 			// Removes extra spaces, and adds a closing parenthesis if needed.
-			return array_map( function( $value ) use ( $isReverseLookup ) {
+			return array_map( function( $value ) use ( $isReverseLookup, $values ) {
 				$value = trim( $value );
-				if ( $isReverseLookup && substr( $value, -1 ) !== ')' ) {
+				if ( $isReverseLookup && substr( $value, -1 ) !== ')' && count( $values ) !== 1 ) {
 					$value .= ')';
 				}
 				return trim( $value );
-			}, explode( $exploder, $value ) );
+			}, $values );
 		}
 	}
 
