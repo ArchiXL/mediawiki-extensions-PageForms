@@ -568,7 +568,10 @@ class PFFormField {
 			return;
 		}
 
-		$this->mPossibleValues = $this->template_field->getPossibleValues();
+		$possibleTemplateFieldValues = $this->template_field->getPossibleValues();
+		if ( empty( $this->mPossibleValues ) && !empty( $possibleTemplateFieldValues ) ) {
+			$this->mPossibleValues = $possibleTemplateFieldValues;
+		}
 	}
 
 	function cleanupTranslateTags( &$value ) {
