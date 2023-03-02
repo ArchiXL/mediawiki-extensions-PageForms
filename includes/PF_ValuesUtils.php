@@ -1067,7 +1067,7 @@ SERVICE wikibase:label { bd:serviceParam wikibase:language \"" . $wgLanguageCode
 	 *
 	 * @return array
 	 */
-	public static function getLabelsFromDisplayTitle( array $values, $doReverseLookup = false, $isSingle = false ) {
+	public static function getLabelsFromDisplayTitle( array $values, $doReverseLookup = false ) {
 		$labels = [];
 		foreach ( $values as $value ) {
 			if ( trim ( $value ) === "" ) {
@@ -1094,23 +1094,12 @@ SERVICE wikibase:label { bd:serviceParam wikibase:language \"" . $wgLanguageCode
 					// Finally set the actual value
 					$value = substr( $realPage, 0, -1 );
 				}
-
 			}
 			$displayTitle = self::getDisplayTitles([ Title::newFromText( $value ) ] );
 			$displayTitle = reset( $displayTitle );
 			$labels[ $value ] = ( $displayTitle && $displayTitle !== $value ) ? $displayTitle . " ($value)" : $value;
 		}
-		$disambiguatedLabels = self::disambiguateLabels( $labels );
-		if ( $isSingle ) {
-			$titles = array_keys( $disambiguatedLabels );
-			$displaytitles = array_values( $disambiguatedLabels );
-			return [
-				'title' => reset( $titles ),
-				'displaytitle' => reset( $displaytitles )
-			];
-		} else {
-			return $disambiguatedLabels;
-		}
+		return self::disambiguateLabels( $labels );
 	}
 
 }

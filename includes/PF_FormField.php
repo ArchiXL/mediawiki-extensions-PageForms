@@ -430,7 +430,7 @@ class PFFormField {
 			} else {
 				// We always map the values to "displaytitle (actual pagename)"
 				foreach ( $f->mPossibleValues as $title => $display_title ) {
-					$f->mPossibleValues[$title] = "$display_title ($title)";
+					$f->mPossibleValues[$title] = $display_title !== $title ? "$display_title ($title)" : $title;
 				}
 				$f->mPossibleValues = PFValuesUtils::getLabelsFromDisplayTitle( $f->mPossibleValues, $wasPosted );
 			}
