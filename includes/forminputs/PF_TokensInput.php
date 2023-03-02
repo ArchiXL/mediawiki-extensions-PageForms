@@ -67,6 +67,7 @@ class PFTokensInput extends PFFormInput {
 		global $wgPageFormsTabIndex, $wgPageFormsFieldNum, $wgPageFormsEDSettings;
 
 		$other_args['is_list'] = true;
+		$isReverseLookup = array_key_exists( 'reverselookup', $other_args );
 
 		if ( array_key_exists( 'values from external data', $other_args ) ) {
 			$autocompleteSettings = 'external data';
@@ -163,13 +164,12 @@ class PFTokensInput extends PFFormInput {
 		if ( array_key_exists( 'max values', $other_args ) ) {
 			$inputAttrs['maxvalues'] = $other_args['max values'];
 		}
-		if( array_key_exists( 'reverselookup', $other_args ) ) {
+		if( $isReverseLookup ) {
 			$inputAttrs['reverselookup'] = 'true';
 		}
 
 		// This code adds predefined tokens in the form of <options>
-
-		$cur_values = PFValuesUtils::getValuesArray( $cur_value, $delimiter, array_key_exists( 'reverselookup', $other_args) );
+		$cur_values = PFValuesUtils::getValuesArray( $cur_value, $delimiter, $isReverseLookup );
 		$optionsText = '';
 
 		$possible_values = $other_args['possible_values'];

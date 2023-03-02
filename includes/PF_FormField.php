@@ -843,9 +843,10 @@ class PFFormField {
 	 * Map a template field value into labels.
 	 * @param string $valueString
 	 * @param string $delimiter
+	 * @param bool $form_submitted
 	 * @return string|string[]
 	 */
-	public function valueStringToLabels( $valueString, $delimiter ) {
+	public function valueStringToLabels( $valueString, $delimiter, $form_submitted = false ) {
 		if ( strlen( trim( $valueString ) ) === 0 ||
 			$this->mPossibleValues === null ) {
 			return $valueString;
@@ -866,7 +867,7 @@ class PFFormField {
 			}
 		}
 
-		if ( $this->hasFieldArg( 'reverselookup' ) ) {
+		if ( $this->hasFieldArg( 'reverselookup' ) && $form_submitted ) {
 			$labels = array_map( function( $titleString ) {
 				$titleString = trim( $titleString );
 				$title = Title::newFromText( $titleString );

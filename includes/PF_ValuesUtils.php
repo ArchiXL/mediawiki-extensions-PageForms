@@ -819,27 +819,16 @@ SERVICE wikibase:label { bd:serviceParam wikibase:language \"" . $wgLanguageCode
 	 *
 	 * @param string[]|string $value
 	 * @param string $delimiter
+	 * @param bool $isReverseLookup
 	 * @return string[]
 	 */
 	public static function getValuesArray( $value, $delimiter, $isReverseLookup = false ) {
 		if ( is_array( $value ) ) {
 			return $value;
 		} else {
-			$exploder = $isReverseLookup ? ")$delimiter" : $delimiter;
-			$value = trim( $value );
-			if ( $value == '' ) {
-				return [];
-			}
-			$values = explode( $exploder, $value );
-
-			// Removes extra spaces, and adds a closing parenthesis if needed.
-			return array_map( function( $value ) use ( $isReverseLookup, $values ) {
-				$value = trim( $value );
-				if ( $isReverseLookup && substr( $value, -1 ) !== ')' && count( $values ) !== 1 ) {
-					$value .= ')';
-				}
-				return trim( $value );
-			}, $values );
+			return $isReverseLookup
+				? array_values( self::getLabelsFromDisplayTitle( array_map( 'trim', explode( $delimiter, $value ) ) ) )
+				: array_map( 'trim', explode( $delimiter, $value ) );
 		}
 	}
 
@@ -1070,9 +1059,15 @@ SERVICE wikibase:label { bd:serviceParam wikibase:language \"" . $wgLanguageCode
 	}
 
 	/**
+	 * Gets a list of display titles with the array key being the page title
+	 *
+	 * @param array $values
+	 * @param $doReverseLookup
+	 * @param $isSingle
+	 *
 	 * @return array
 	 */
-	public static function getLabelsFromDisplayTitle( array $values, $doReverseLookup = false ) {
+	public static function getLabelsFromDisplayTitle( array $values, $doReverseLookup = false, $isSingle = false ) {
 		$labels = [];
 		foreach ( $values as $value ) {
 			if ( trim ( $value ) === "" ) {
@@ -1084,6 +1079,10 @@ SERVICE wikibase:label { bd:serviceParam wikibase:language \"" . $wgLanguageCode
 				//  'Pagina (doel) (Pagina)',
 				// will match on (Privacy (doel)concept), (Pagina), ect
 				if ( ! preg_match_all('/\((?:[^)(]*(?R)?)*+\)/', $value, $matches) )  {
+					$title = Title::newFromText( $value );
+					if ( $title && $title->exists() ) {
+						$labels[ $value ] = $value;
+					}
 					// If no matches where found, just leave the value as is
 					continue;
 				} else {
@@ -1101,7 +1100,17 @@ SERVICE wikibase:label { bd:serviceParam wikibase:language \"" . $wgLanguageCode
 			$displayTitle = reset( $displayTitle );
 			$labels[ $value ] = ( $displayTitle && $displayTitle !== $value ) ? $displayTitle . " ($value)" : $value;
 		}
-		return self::disambiguateLabels( $labels );
+		$disambiguatedLabels = self::disambiguateLabels( $labels );
+		if ( $isSingle ) {
+			$titles = array_keys( $disambiguatedLabels );
+			$displaytitles = array_values( $disambiguatedLabels );
+			return [
+				'title' => reset( $titles ),
+				'displaytitle' => reset( $displaytitles )
+			];
+		} else {
+			return $disambiguatedLabels;
+		}
 	}
 
 }

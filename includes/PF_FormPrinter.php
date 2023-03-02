@@ -1311,7 +1311,7 @@ END;
 									$delimiter = null;
 								}
 							}
-							$cur_value = $form_field->valueStringToLabels( $cur_value, $delimiter );
+							$cur_value = $form_field->valueStringToLabels( $cur_value, $delimiter, $form_submitted );
 						}
 
 						// Call hooks - unfortunately this has to be split into two
