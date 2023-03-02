@@ -423,9 +423,11 @@
 					$( '#loading-' + input_id ).hide();
 					data.pfautocomplete.forEach( function(item) {
 						if (item.displaytitle !== undefined && reverse_lookup && item.displaytitle !== item.title ) {
-							var currentDisplayTitle = item.displaytitle + " ("+ item.title +")";
-							item.id = currentDisplayTitle;
-							item.text = currentDisplayTitle;
+							if ( item.displaytitle.indexOf("("+ item.title +")") === -1 ) {
+								item.displaytitle = item.displaytitle + " (" + item.title + ")";
+							}
+							item.id = item.displaytitle;
+							item.text = item.displaytitle;
 						} else if (item.displaytitle !== undefined) {
 							item.id = item.displaytitle;
 							item.text = item.displaytitle;
