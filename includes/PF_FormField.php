@@ -424,9 +424,11 @@ class PFFormField {
 				$formValues = $formValues[ $field_name ] ?? [];
 				$formValues = is_string( $formValues ) ? explode( $f->mFieldArgs['delimiter'], $formValues ) : $formValues;
 				$formValues = array_map( 'trim', $formValues );
+
+				$labels = PFValuesUtils::getLabelsFromDisplayTitle( $formValues, $wasPosted );
 				// Note we only allow the form values that are posted or set as a value in the page.
 				// @note might do a better job and check if the value is allowed?
-				$f->mPossibleValues = PFValuesUtils::getLabelsFromDisplayTitle( $formValues, $wasPosted );
+				$f->mPossibleValues = $wasPosted ? $labels : array_values( $labels );
 			} else {
 				// We always map the values to "displaytitle (actual pagename)"
 				foreach ( $f->mPossibleValues as $title => $display_title ) {
