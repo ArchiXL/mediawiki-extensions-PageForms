@@ -1099,7 +1099,7 @@ SERVICE wikibase:label { bd:serviceParam wikibase:language \"" . $wgLanguageCode
 			$displayTitle = reset( $displayTitle );
 			$labels[ $value ] = ( $displayTitle && $displayTitle !== $value ) ? $displayTitle . " ($value)" : $value;
 		}
-		return self::disambiguateLabels( $labels );
+		return $labels;
 	}
 
 }
