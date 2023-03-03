@@ -432,7 +432,7 @@ class PFFormField {
 			} else {
 				// We always map the values to "displaytitle (actual pagename)"
 				foreach ( $f->mPossibleValues as $title => $display_title ) {
-					$f->mPossibleValues[$title] = $display_title !== $title ? "$display_title ($title)" : $title;
+					$f->mPossibleValues[$title] = strtolower( $display_title ) !== strtolower( $title ) ? "$display_title ($title)" : $title;
 				}
 				$f->mPossibleValues = PFValuesUtils::getLabelsFromDisplayTitle( $f->mPossibleValues, $wasPosted );
 			}
@@ -876,7 +876,7 @@ class PFFormField {
 				if ( $title instanceof Title && $title->exists() ) {
 					$displayTitles = PFValuesUtils::getDisplayTitles( [ $title ] );
 					$displayTitle = reset( $displayTitles );
-					if ( $displayTitle !== $titleString ) {
+					if ( strtolower($displayTitle) !== strtolower($titleString) ) {
 						$titleString = "$displayTitle ($titleString)";
 					}
 				}

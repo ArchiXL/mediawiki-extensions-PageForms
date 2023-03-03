@@ -1097,7 +1097,7 @@ SERVICE wikibase:label { bd:serviceParam wikibase:language \"" . $wgLanguageCode
 			}
 			$displayTitle = self::getDisplayTitles([ Title::newFromText( $value ) ] );
 			$displayTitle = reset( $displayTitle );
-			$labels[ $value ] = ( $displayTitle && $displayTitle !== $value ) ? $displayTitle . " ($value)" : $value;
+			$labels[ $value ] = ( $displayTitle && strtolower(trim($displayTitle)) !== trim(strtolower($value)) ) ? $displayTitle . " ($value)" : $value;
 		}
 		return $labels;
 	}
