@@ -876,7 +876,7 @@ class PFFormField {
 				if ( $title instanceof Title && $title->exists() ) {
 					$displayTitles = PFValuesUtils::getDisplayTitles( [ $title ] );
 					$displayTitle = reset( $displayTitles );
-					if ( strtolower($displayTitle) !== strtolower($titleString) ) {
+					if ( strtolower ( trim( $displayTitle ) ) !== trim( strtolower( $titleString ) ) ) {
 						$titleString = "$displayTitle ($titleString)";
 					}
 				}
