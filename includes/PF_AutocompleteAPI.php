@@ -112,7 +112,7 @@ class PFAutocompleteAPI extends ApiBase {
 		if ( $external_url === null ) {
 			$formattedData = [];
 			foreach ( $data as $index => $value ) {
-				if ( $map ) {
+				if ( $map && strtolower( $index ) !== strtolower( $value ) ) {
 					$formattedData[] = [ 'title' => $index, 'displaytitle' => $value ];
 				} else {
 					$formattedData[] = [ 'title' => $value ];
