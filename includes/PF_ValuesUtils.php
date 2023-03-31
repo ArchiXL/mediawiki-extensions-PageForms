@@ -938,6 +938,9 @@ SERVICE wikibase:label { bd:serviceParam wikibase:language \"" . $wgLanguageCode
 	 */
 	public static function getDisplayTitles( array $titles ) {
 		$pages = [];
+		$titles = array_filter( $titles, function ( $title ) {
+			return $title instanceof Title;
+		} );
 		$services = MediaWikiServices::getInstance();
 		if ( method_exists( $services, 'getPageProps' ) ) {
 			// MW 1.36+
