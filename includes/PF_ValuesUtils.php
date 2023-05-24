@@ -396,10 +396,14 @@ SERVICE wikibase:label { bd:serviceParam wikibase:language \"" . $wgLanguageCode
 	 * @return string[] a sorted version of $pages, sorted via $sortkeys
 	 */
 	static function fixedMultiSort( $sortkeys, $pages ) {
+		global $wgPageFormsUseDisplayTitle;
 		array_multisort( $sortkeys, $pages );
 		$newPages = [];
 		foreach ( $pages as $key => $value ) {
 			$fixedKey = rtrim( $key, '@' );
+			if ( $wgPageFormsUseDisplayTitle && strtolower( $fixedKey ) == strtolower( $value ) ) {
+					$value = $fixedKey;
+			}
 			$newPages[$fixedKey] = $value;
 		}
 		return $newPages;
@@ -1065,8 +1069,9 @@ SERVICE wikibase:label { bd:serviceParam wikibase:language \"" . $wgLanguageCode
 	 * Gets a list of display titles with the array key being the page title
 	 *
 	 * @param array $values
-	 * @param $doReverseLookup
-	 * @param $isSingle
+	 * @param bool $doReverseLookup
+	 * @param bool $isRemoteAutocompletion
+	 *
 	 *
 	 * @return array
 	 */
@@ -1076,13 +1081,16 @@ SERVICE wikibase:label { bd:serviceParam wikibase:language \"" . $wgLanguageCode
 			if ( trim ( $value ) === "" ) {
 				continue;
 			}
+			$title = Title::newFromText( $value );
+			if ( $title && $title->exists() ) {
+				$value = $title->getFullText();
+			}
 			if ( $doReverseLookup ) {
 				// The regex matches every 'real' page inside the last brackets; for example
 				//  'Privacy (doel) (Privacy (doel)concept)',
 				//  'Pagina (doel) (Pagina)',
 				// will match on (Privacy (doel)concept), (Pagina), ect
 				if ( ! preg_match_all('/\((?:[^)(]*(?R)?)*+\)/', $value, $matches) )  {
-					$title = Title::newFromText( $value );
 					if ( $title && $title->exists() ) {
 						$labels[ $value ] = $value;
 					}
