@@ -435,27 +435,32 @@ SERVICE wikibase:label { bd:serviceParam wikibase:language \"" . $wgLanguageCode
 
 		global $wgPageFormsUseDisplayTitle;
 		$conceptDI = SMWDIWikiPage::newFromTitle( $conceptTitle );
-		$desc = new SMWConceptDescription( $conceptDI );
-		$printout = new SMWPrintRequest( SMWPrintRequest::PRINT_THIS, "" );
-		$desc->addPrintRequest( $printout );
-		$query = new SMWQuery( $desc );
-		$query->setLimit( self::getMaxValuesToRetrieve( $substring ) );
-		$query_result = $store->getQueryResult( $query );
 		$pages = [];
 		$sortkeys = [];
 		$titles = [];
-		while ( $res = $query_result->getNext() ) {
-			$page = $res[0]->getNextText( SMW_OUTPUT_WIKI );
-			if ( $wgPageFormsUseDisplayTitle ) {
-				$title = Title::newFromText( $page );
-				if ( $title !== null ) {
-					$titles[] = $title;
+		$offset = 0;
+
+		do {
+			$desc = new \SMW\Query\Language\ConceptDescription( $conceptDI );
+			$query = new SMWQuery( $desc );
+			$query->setLimit( self::getMaxValuesToRetrieve( $substring ) );
+			$query->setOffset( $offset );
+			$queryResult = $store->getQueryResult( $query );
+			$pageList = $queryResult->getResults();
+			$hasMoreResults = $queryResult->hasFurtherResults();
+
+			foreach ( $pageList as $res ) {
+				if ( $wgPageFormsUseDisplayTitle && $res->getTitle() !== null ) {
+					$titles[] = $res->getTitle();
+				} else {
+					$pages[$res] = $res;
+					$sortkeys[$res] = $res;
 				}
-			} else {
-				$pages[$page] = $page;
-				$sortkeys[$page] = $page;
 			}
-		}
+
+			$offset += sizeof( $pageList );
+
+		} while ( $hasMoreResults );
 
 		if ( $wgPageFormsUseDisplayTitle ) {
 			$services = MediaWikiServices::getInstance();
@@ -521,6 +526,7 @@ SERVICE wikibase:label { bd:serviceParam wikibase:language \"" . $wgLanguageCode
 			$pages = $filtered_pages;
 			$sortkeys = $filtered_sortkeys;
 		}
+
 		array_multisort( $sortkeys, $pages );
 		return $pages;
 	}
