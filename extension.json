@@ -557,9 +557,6 @@
 		"ext.pageforms.wikieditor": {
 			"scripts": "libs/PF_wikieditor.js",
 			"styles": "skins/PF_wikieditor.css",
-			"dependencies": [
-				"ext.wikiEditor"
-			].
 			"targets": [
 				"desktop",
 				"mobile"
