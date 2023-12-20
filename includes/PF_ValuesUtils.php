@@ -892,7 +892,7 @@ SERVICE wikibase:label { bd:serviceParam wikibase:language \"" . $wgLanguageCode
 		}
 
 		$substring = strtolower( $substring );
-		if ( $replaceSpaces ) {
+		if ( $replaceSpaces && $db->getType() == 'postgresql' ) {
 			$substring = str_replace( ' ', '_', $substring );
 		}
 
