@@ -20,6 +20,10 @@ class PFFormField {
 	 * @var PFTemplateField
 	 */
 	public $template_field;
+	/**
+	 * @var array
+	 */
+	public static $mappedValuesCache = [];
 	private $mInputType;
 	private $mIsMandatory;
 	private $mIsHidden;
@@ -445,16 +449,32 @@ class PFFormField {
 			// the exact page name - and if these values come from
 			// "values from namespace", the namespace prefix was
 			// not included, so we need to add it now.
-			if ( $valuesSourceType == 'namespace' && $valuesSource != '' && $valuesSource != 'Main' ) {
-				foreach ( $f->mPossibleValues as $index => &$value ) {
-					$value = $valuesSource . ':' . $value;
+			if ( $valuesSourceType == 'namespace' ) {
+				if ( $valuesSource != '' && $valuesSource != 'Main' ) {
+					foreach ( $f->mPossibleValues as $index => &$value ) {
+						$value = $valuesSource . ':' . $value;
+					}
 				}
 				// Has to be set to false to not mess up the
 				// handling.
 				$f->mUseDisplayTitle = false;
 			}
-			$mappedValues = PFMappingUtils::getMappedValuesForInput( $f->mPossibleValues, $f->mFieldArgs );
-			$f->mPossibleValues = $mappedValues;
+
+			$mappedValuesKey = json_encode( $f->mFieldArgs ) . $mappingType;
+			if ( array_key_exists( $mappedValuesKey, self::$mappedValuesCache ) ) {
+				$f->mPossibleValues = self::$mappedValuesCache[$mappedValuesKey];
+			} else {
+				$f->mPossibleValues = PFMappingUtils::getMappedValuesForInput( $f->mPossibleValues, $f->mFieldArgs );
+				self::$mappedValuesCache[$mappedValuesKey] = $f->mPossibleValues;
+			}
+
+			// If the number of possible values is greater than the max values to retrieve, set reverselookup to true.
+			// This enforces the use of the remote autocomplete feature for larger fields and prevents
+			// the form from loading slowly.
+			if ( count( $f->mPossibleValues ) >= PFValuesUtils::getMaxValuesToRetrieve() ) {
+				$f->setFieldArg( 'reverselookup', true );
+			}
+
 		}
 
 		if ( $template_in_form->allowsMultiple() ) {
@@ -575,7 +595,7 @@ class PFFormField {
 		}
 	}
 
-	function getCurrentValue( $template_instance_query_values, $form_submitted, $source_is_page, $all_instances_printed, &$val_modifier = null ) {
+	function getCurrentValue( $template_instance_query_values, $form_submitted, $source_is_page, $all_instances_printed, &$val_modifier = null, $is_autoedit = false ) {
 		// Get the value from the request, if
 		// it's there, and if it's not an array.
 		$field_name = $this->template_field->getFieldName();
@@ -640,15 +660,30 @@ class PFFormField {
 							if ( $key === 'is_list' ) {
 								$cur_values[$key] = $val;
 							} else {
-								$cur_values[] = PFValuesUtils::labelToValue( $val, $this->mPossibleValues );
+								$cur_values[] = PFValuesUtils::labelToValue(
+									$val,
+									$this->mPossibleValues
+								);
 							}
 						}
+
+						// This part is needed to map the values back to the original page titles.
+						// The form is submitted with "displaytitle (title)" format, so we need to map it back.
+						if ( in_array( 'remote autocompletion', $this->getFieldArgs() ) ) {
+							$hasList = $cur_values['is_list'] ?? false;
+							// The key containing the actual title of the page
+							$cur_values = array_keys( PFMappingUtils::getLabelsForTitles( $cur_values, true ) );
+							if ( $hasList ) {
+								$cur_values['is_list'] = $hasList;
+							}
+						}
+
 					} else {
 						foreach ( $field_query_val as $key => $val ) {
 							$cur_values[$key] = $val;
 						}
 					}
-					return PFFormPrinter::getStringFromPassedInArray( $cur_values, $delimiter );
+					return PFFormPrinter::getStringFromPassedInArray( $cur_values, $delimiter, $is_autoedit );
 				} else {
 					$field_query_val = trim( $field_query_val );
 					if ( $map_field && $this->mPossibleValues !== null ) {
@@ -701,10 +736,11 @@ class PFFormField {
 	 * Map a template field value into labels.
 	 * @param string $valueString
 	 * @param string $delimiter
+	 * @param bool $formSubmitted
 	 * @return string|string[]
 	 */
-	public function valueStringToLabels( $valueString, $delimiter ) {
-		if ( $valueString == null || trim( $valueString ) === '' ||
+	public function valueStringToLabels( $valueString, $delimiter, $formSubmitted ) {
+		if ( $valueString === null || trim( $valueString ) === '' ||
 			$this->mPossibleValues === null ) {
 			return $valueString;
 		}
@@ -713,6 +749,14 @@ class PFFormField {
 		} else {
 			$values = [ $valueString ];
 		}
+
+		$maxValues = PFValuesUtils::getMaxValuesToRetrieve();
+		if ( $formSubmitted && ( count( $this->mPossibleValues ) >= $maxValues ) ) {
+			// Remote autocompletion.
+			$mappedValues = PFMappingUtils::getMappedValuesForInput( $values, $this->getFieldArgs() );
+			return array_values( $mappedValues );
+		}
+
 		$labels = [];
 		foreach ( $values as $value ) {
 			if ( $value != '' ) {
@@ -723,11 +767,13 @@ class PFFormField {
 				}
 			}
 		}
-		if ( count( $labels ) > 1 ) {
-			return $labels;
-		} else {
+
+		// Most form input types expect a string, and not an array.
+		if ( count( $labels ) == 1 ) {
 			return $labels[0];
 		}
+
+		return $labels;
 	}
 
 	public function additionalHTMLForInput( $cur_value, $field_name, $template_name ) {
@@ -779,7 +825,7 @@ class PFFormField {
 			if ( $fullCargoField != null ) {
 				// It's inefficient to get these values via
 				// text parsing, but oh well.
-				list( $cargo_table, $cargo_field ) = explode( '|', $fullCargoField, 2 );
+				[ $cargo_table, $cargo_field ] = explode( '|', $fullCargoField, 2 );
 				$text .= Html::hidden( 'input_' . $wgPageFormsFieldNum . '_unique_cargo_table', $cargo_table );
 				$text .= Html::hidden( 'input_' . $wgPageFormsFieldNum . '_unique_cargo_field', $cargo_field );
 			}
@@ -994,7 +1040,7 @@ class PFFormField {
 		} else {
 			$other_args['possible_values'] = $this->template_field->getPossibleValues();
 			if ( $this->hasFieldArg( 'mapping using translate' ) ) {
-				$mappedValues = PFValuesUtils::getValuesWithTranslateMapping( $other_args['possible_values'], $other_args['mapping using translate'] );
+				$mappedValues = PFMappingUtils::getValuesWithTranslateMapping( $other_args['possible_values'], $other_args['mapping using translate'] );
 				$other_args['value_labels'] = array_values( $mappedValues );
 			} else {
 				$other_args['value_labels'] = $this->template_field->getValueLabels();

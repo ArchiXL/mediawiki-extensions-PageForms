@@ -50,14 +50,7 @@ class PFTemplate {
 		if ( $templateTitle === null ) {
 			return;
 		}
-		$services = MediaWikiServices::getInstance();
-		if ( method_exists( $services, 'getPageProps' ) ) {
-			// MW 1.36+
-			$pageProps = $services->getPageProps();
-		} else {
-			$pageProps = PageProps::getInstance();
-		}
-		$properties = $pageProps->getProperties(
+		$properties = MediaWikiServices::getInstance()->getPageProps()->getProperties(
 			[ $templateTitle ], [ 'PageFormsTemplateParams' ]
 		);
 		if ( count( $properties ) == 0 ) {
@@ -249,7 +242,7 @@ class PFTemplate {
 
 		// First, get the table name, and fields, declared for this
 		// template, if any.
-		list( $tableName, $tableSchema ) = $this->getCargoTableAndSchema( $templateTitle );
+		[ $tableName, $tableSchema ] = $this->getCargoTableAndSchema( $templateTitle );
 		if ( $tableName == null ) {
 			$fieldDescriptions = [];
 		} else {
@@ -372,7 +365,7 @@ class PFTemplate {
 		if ( $tableSchemaString === null ) {
 			// There's no declared table - but see if there's an
 			// attached table.
-			list( $tableName, $isDeclared ) = CargoUtils::getTableNameForTemplate( $templateTitle );
+			[ $tableName, $isDeclared ] = CargoUtils::getTableNameForTemplate( $templateTitle );
 			if ( $tableName == null ) {
 				return [ null, null ];
 			}

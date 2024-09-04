@@ -19,6 +19,7 @@ class PFTemplateDisplay {
 
 		$templateFields = [];
 		$format = 'infobox';
+		$infoboxTitle = null;
 		$tableFieldValues = [];
 
 		$templateTitle = $frame->title;
@@ -39,6 +40,8 @@ class PFTemplateDisplay {
 				$value = trim( $parts[1] );
 				if ( $key == '_format' ) {
 					$format = $value;
+				} elseif ( $key == '_title' ) {
+					$infoboxTitle = $value;
 				} else {
 					$tableFieldValues[$key] = $value;
 				}
@@ -60,7 +63,18 @@ class PFTemplateDisplay {
 			$text = '<table class="wikitable">' . "\n";
 		} elseif ( $format == 'infobox' ) {
 			$text = '<table class="infoboxTable">' . "\n";
-			$text .= '<tr><th colspan="2" class="infoboxTitle">' . $title->getFullText() . '</th></tr>' . "\n";
+			// If it's blank (as opposed to null), it means the
+			// infobox title was deliberately set to empty, to avoid
+			// displaying a title row.
+			if ( $infoboxTitle !== '' ) {
+				if ( $infoboxTitle === null ) {
+					$pageProps = MediaWikiServices::getInstance()->getPageProps()
+						->getProperties( $title, 'displaytitle' );
+					$infoboxTitle = array_shift( $pageProps ) ??
+						htmlspecialchars( $title->getFullText(), ENT_NOQUOTES );
+				}
+				$text .= '<tr><th colspan="2" class="infoboxTitle">' . $infoboxTitle . '</th></tr>' . "\n";
+			}
 		} else {
 			$text = '';
 		}
@@ -157,7 +171,7 @@ class PFTemplateDisplay {
 		$mappingFormat = new CargoMapsFormat( $parser->getOutput() );
 
 		try {
-			list( $lat, $lon ) = CargoUtils::parseCoordinatesString( $coordinatesStr );
+			[ $lat, $lon ] = CargoUtils::parseCoordinatesString( $coordinatesStr );
 		} catch ( MWException $e ) {
 			return '';
 		}
@@ -237,25 +251,7 @@ class PFTemplateDisplay {
 
 	private static function fileText( $value ) {
 		$title = Title::newFromText( $value, NS_FILE );
-		if ( $title == null || !$title->exists() ) {
-			return $value;
-		}
-
-		if ( $title->isRedirect() ) {
-			if ( method_exists( MediaWikiServices::class, 'getWikiPageFactory' ) ) {
-				// MW 1.36+
-				$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $title );
-			} else {
-				$wikiPage = new WikiPage( $title );
-			}
-
-			$title = $wikiPage->getRedirectTarget();
-			if ( !$title->exists() ) {
-				return $title->getText();
-			}
-		}
-
-		$file = MediaWikiServices::getInstance()->getRepoGroup()->getLocalRepo()->newFile( $title );
+		$file = MediaWikiServices::getInstance()->getRepoGroup()->findFile( $title );
 		return Linker::makeThumbLinkObj(
 			$title,
 			$file,

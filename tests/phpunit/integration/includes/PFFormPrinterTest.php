@@ -1,6 +1,5 @@
 <?php
 
-use MediaWiki\MediaWikiServices;
 use OOUI\BlankTheme;
 
 /**
@@ -19,7 +18,7 @@ class PFFormPrinterTest extends MediaWikiIntegrationTestCase {
 		// Make sure the form is not in "disabled" state. Unfortunately setting up the global state
 		// environment in a proper way to have PFFormPrinter work on a mock title object is very
 		// difficult. Therefore we just override the permission check by using a hook.
-		$hookContainer = MediaWikiServices::getInstance()->getHookContainer();
+		$hookContainer = $this->getServiceContainer()->getHookContainer();
 		$hookContainer->register( 'PageForms::UserCanEditPage', static function ( $pageTitle, &$userCanEditPage ) {
 			$userCanEditPage = true;
 			return true;
@@ -38,7 +37,7 @@ class PFFormPrinterTest extends MediaWikiIntegrationTestCase {
 
 		$wgOut->getContext()->setTitle( $this->getTitle() );
 
-		list( $form_text, $page_text, $form_page_title, $generated_page_name ) =
+		[ $form_text, $page_text, $form_page_title, $generated_page_name ] =
 			$wgPageFormsFormPrinter->formHTML(
 				$form_def = $setup['form_definition'],
 				$form_submitted = true,
@@ -134,11 +133,11 @@ class PFFormPrinterTest extends MediaWikiIntegrationTestCase {
 
 		$mockTitle->expects( $this->any() )
 			->method( 'getDBkey' )
-			->will( $this->returnValue( 'Sometitle' ) );
+			->willReturn( 'Sometitle' );
 
 		$mockTitle->expects( $this->any() )
 			->method( 'getNamespace' )
-			->will( $this->returnValue( PF_NS_FORM ) );
+			->willReturn( PF_NS_FORM );
 
 		return $mockTitle;
 	}

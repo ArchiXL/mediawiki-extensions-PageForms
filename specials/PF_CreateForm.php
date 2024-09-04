@@ -40,7 +40,7 @@ class PFCreateForm extends SpecialPage {
 	function doSpecialCreateForm( $query ) {
 		$out = $this->getOutput();
 		$req = $this->getRequest();
-		$db = wfGetDB( DB_REPLICA );
+		$db = PFUtils::getReadDB();
 
 		if ( $query !== null ) {
 			$presetFormName = str_replace( '_', ' ', $query );
@@ -78,7 +78,7 @@ class PFCreateForm extends SpecialPage {
 			# ignore variables that are not of the right form
 			if ( strpos( $var, "_" ) != false ) {
 				# get the template declarations and work from there
-				list( $action, $id ) = explode( "_", $var, 2 );
+				[ $action, $id ] = explode( "_", $var, 2 );
 				if ( $action == "template" ) {
 					// If the button was pressed to remove
 					// this template, just don't add it to
@@ -711,7 +711,10 @@ END;
 		$dropdownAttrs = [];
 		foreach ( $possible_input_types as $i => $input_type ) {
 			if ( $i == 0 ) {
-				array_push( $dropdownAttrs, [ 'data' => '', 'label' => $input_type . ' ' . $this->msg( 'pf_createform_inputtypedefault' )->escaped() ] );
+				// The actual input type value has to start with a "."
+				// for the default input type, to enable special handling
+				// by both the PHP (on submit) and the JS (on select).
+				array_push( $dropdownAttrs, [ 'data' => ".$input_type", 'label' => $input_type . ' ' . $this->msg( 'pf_createform_inputtypedefault' )->escaped() ] );
 			} else {
 				array_push( $dropdownAttrs, [ 'data' => $input_type, 'label' => $input_type ] );
 			}

@@ -290,28 +290,12 @@ class PFAutoeditAPI extends ApiBase {
 		if ( $formTitle->isRedirect() ) {
 			$this->logMessage( 'Form ' . $this->mOptions['form'] . ' is a redirect. Finding target.', self::DEBUG );
 
-			if ( method_exists( MediaWikiServices::class, 'getWikiPageFactory' ) ) {
-				// MW 1.36+
-				$formWikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $formTitle );
-			} else {
-				$formWikiPage = WikiPage::factory( $formTitle );
-			}
-			$formTitle = $formWikiPage->getContent( RevisionRecord::RAW )->getUltimateRedirectTarget();
+			$formWikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $formTitle );
+			$formTitle = $formWikiPage->getContent( RevisionRecord::RAW )->getRedirectTarget();
 
-			// if we exceeded $wgMaxRedirects or encountered an invalid redirect target, give up
+			// If it's a double-redirect, give up.
 			if ( $formTitle->isRedirect() ) {
-				if ( method_exists( MediaWikiServices::class, 'getWikiPageFactory' ) ) {
-					// MW 1.36+
-					$newTitle = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $formTitle )->getRedirectTarget();
-				} else {
-					$newTitle = WikiPage::factory( $formTitle )->getRedirectTarget();
-				}
-
-				if ( $newTitle instanceof Title && $newTitle->isValidRedirectTarget() ) {
-					throw new MWException( $this->msg( 'pf_autoedit_redirectlimitexeeded', $this->mOptions['form'] )->parse() );
-				} else {
-					throw new MWException( $this->msg( 'pf_autoedit_invalidredirecttarget', $newTitle->getFullText(), $this->mOptions['form'] )->parse() );
-				}
+				throw new MWException( $this->msg( 'pf_autoedit_redirectlimitexeeded', $this->mOptions['form'] )->parse() );
 			}
 		}
 
@@ -529,15 +513,14 @@ class PFAutoeditAPI extends ApiBase {
 				// Give extensions a chance to modify URL query on create
 				$sectionanchor = null;
 				$extraQuery = null;
-				MediaWikiServices::getInstance()->getHookContainer()->run( 'ArticleUpdateBeforeRedirect', [ $editor->getArticle(), &$sectionanchor, &$extraQuery ] );
+				$services->getHookContainer()->run( 'ArticleUpdateBeforeRedirect', [ $editor->getArticle(), &$sectionanchor, &$extraQuery ] );
 
 				// @phan-suppress-next-line PhanImpossibleCondition
 				if ( $extraQuery ) {
-					if ( $query ) {
-						$query .= '&' . $extraQuery;
-					} else {
-						$query .= $extraQuery;
+					if ( $query !== '' ) {
+						$query .= '&';
 					}
+					$query .= $extraQuery;
 				}
 
 				$redirect = $title->getFullURL( $query ) . $anchor;
@@ -546,13 +529,8 @@ class PFAutoeditAPI extends ApiBase {
 				$reload = $this->getRequest()->getText( 'reload' );
 				if ( $returnto !== null ) {
 					// Purge the returnto page
-					if ( method_exists( MediaWikiServices::class, 'getWikiPageFactory' ) ) {
-						// MW 1.36+
-						$returntoPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $returnto );
-					} else {
-						$returntoPage = WikiPage::factory( $returnto );
-					}
-					if ( $returntoPage && $returntoPage->exists() && $reload ) {
+					$returntoPage = $services->getWikiPageFactory()->newFromTitle( $returnto );
+					if ( $returntoPage->exists() && $reload ) {
 						$returntoPage->doPurge();
 					}
 					$redirect = $returnto->getFullURL();
@@ -565,11 +543,10 @@ class PFAutoeditAPI extends ApiBase {
 			case EditPage::AS_SUCCESS_UPDATE:
 				// Article successfully updated
 				$extraQuery = '';
-				// @phan-suppress-next-line PhanTypePossiblyInvalidDimOffset
-				$sectionanchor = $resultDetails['sectionanchor'];
+				$sectionanchor = $resultDetails['sectionanchor'] ?? null;
 
 				// Give extensions a chance to modify URL query on update
-				MediaWikiServices::getInstance()->getHookContainer()->run( 'ArticleUpdateBeforeRedirect', [ $editor->getArticle(), &$sectionanchor, &$extraQuery ] );
+				$services->getHookContainer()->run( 'ArticleUpdateBeforeRedirect', [ $editor->getArticle(), &$sectionanchor, &$extraQuery ] );
 
 				// @phan-suppress-next-line PhanTypePossiblyInvalidDimOffset
 				if ( $resultDetails['redirect'] ) {
@@ -587,13 +564,8 @@ class PFAutoeditAPI extends ApiBase {
 				$reload = $this->getRequest()->getText( 'reload' );
 				if ( $returnto !== null ) {
 					// Purge the returnto page
-					if ( method_exists( MediaWikiServices::class, 'getWikiPageFactory' ) ) {
-						// MW 1.36+
-						$returntoPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $returnto );
-					} else {
-						$returntoPage = WikiPage::factory( $returnto );
-					}
-					if ( $returntoPage && $returntoPage->exists() && $reload ) {
+					$returntoPage = $services->getWikiPageFactory()->newFromTitle( $returnto );
+					if ( $returntoPage->exists() && $reload ) {
 						$returntoPage->doPurge();
 					}
 					$redirect = $returnto->getFullURL();
@@ -623,8 +595,7 @@ class PFAutoeditAPI extends ApiBase {
 
 			case EditPage::AS_SPAM_ERROR:
 				// summary contained spam according to one of the regexes in $wgSummarySpamRegex
-				// @phan-suppress-next-line PhanTypePossiblyInvalidDimOffset
-				$match = $resultDetails['spam'];
+				$match = $resultDetails['spam'] ?? '';
 				if ( is_array( $match ) ) {
 					$match = $this->getLanguage()->listToText( $match );
 				}
@@ -674,7 +645,8 @@ class PFAutoeditAPI extends ApiBase {
 		if ( $this->mStatus === 200 ) {
 			if ( array_key_exists( 'ok text', $this->mOptions ) ) {
 				$targetTitle = Title::newFromText( $this->mOptions['target'] );
-				$responseText = $this->getMessageCache()->parse( $this->mOptions['error text'], $targetTitle )->getText();
+				$messageCache = MediaWikiServices::getInstance()->getMessageCache();
+				$responseText = $messageCache->parse( $this->mOptions['ok text'], $targetTitle )->getText();
 			} elseif ( $this->mAction === self::ACTION_SAVE ) {
 				// We turn this into a link of the form [[:A|A]]
 				// so that pages in the File: namespace won't
@@ -688,7 +660,8 @@ class PFAutoeditAPI extends ApiBase {
 			// get errortext (or use default)
 			if ( array_key_exists( 'error text', $this->mOptions ) ) {
 				$targetTitle = Title::newFromText( $this->mOptions['target'] );
-				$responseText = $this->getMessageCache()->parse( $this->mOptions['error text'], $targetTitle )->getText();
+				$messageCache = MediaWikiServices::getInstance()->getMessageCache();
+				$responseText = $messageCache->parse( $this->mOptions['error text'], $targetTitle )->getText();
 			} elseif ( $this->mAction === self::ACTION_SAVE ) {
 				$targetText = ':' . $this->mOptions['target'] . '|' . $this->mOptions['target'];
 				$responseText = $this->msg( 'pf_autoedit_fail', $targetText )->parse();
@@ -808,11 +781,11 @@ class PFAutoeditAPI extends ApiBase {
 			// this tag until we find one that gives a nonexistent
 			// page title.
 			// We cannot use $targetTitle->exists(); it does not use
-			// Title::GAID_FOR_UPDATE, which is needed to get
+			// IDBAccessObject::READ_LATEST, which is needed to get
 			// correct data from cache; use
 			// $targetTitle->getArticleID() instead.
 			$numAttemptsAtTitle = 0;
-			while ( $targetTitle->getArticleID( Title::GAID_FOR_UPDATE ) !== 0 ) {
+			while ( $targetTitle->getArticleID( IDBAccessObject::READ_LATEST ) !== 0 ) {
 				$numAttemptsAtTitle++;
 
 				if ( $isRandom ) {
@@ -960,7 +933,7 @@ class PFAutoeditAPI extends ApiBase {
 			$wgRequest = new FauxRequest( $this->mOptions, true, $session );
 			// Call PFFormPrinter::formHTML() to get at the form
 			// HTML of the existing page.
-			list( $formHTML, $targetContent, $form_page_title, $generatedTargetNameFormula ) =
+			[ $formHTML, $targetContent, $form_page_title, $generatedTargetNameFormula ] =
 				$wgPageFormsFormPrinter->formHTML(
 					// Special handling for autoedit edits -
 					// otherwise, multi-instance templates
@@ -996,7 +969,7 @@ class PFAutoeditAPI extends ApiBase {
 			// Spoof $wgRequest for PFFormPrinter::formHTML().
 			$session = RequestContext::getMain()->getRequest()->getSession();
 			$wgRequest = new FauxRequest( $this->mOptions, true, $session );
-			list( $formHTML, $targetContent, $generatedFormName, $generatedTargetNameFormula ) =
+			[ $formHTML, $targetContent, $generatedFormName, $generatedTargetNameFormula ] =
 				$wgPageFormsFormPrinter->formHTML(
 					$formContent, $isFormSubmitted, $pageExists,
 					$formArticleId, $preloadContent, $targetName, $targetNameFormula,
@@ -1026,13 +999,16 @@ class PFAutoeditAPI extends ApiBase {
 				$this->mOptions['target'] = $this->generateTargetName( $generatedTargetNameFormula );
 			}
 
+			$contextTitle = Title::newFromText( $this->mOptions['target'] );
+
 			// Lets other code process additional form-definition syntax
-			MediaWikiServices::getInstance()->getHookContainer()->run( 'PageForms::WritePageData', [ $this->mOptions['form'], Title::newFromText( $this->mOptions['target'] ), &$targetContent ] );
+			MediaWikiServices::getInstance()->getHookContainer()->run( 'PageForms::WritePageData', [ $this->mOptions['form'], &$contextTitle, &$targetContent ] );
 
 			$editor = $this->setupEditPage( $targetContent );
 
 			// Perform the requested action.
 			if ( $this->mAction === self::ACTION_PREVIEW ) {
+				$editor->setContextTitle( $contextTitle );
 				$this->doPreview( $editor );
 			} elseif ( $this->mAction === self::ACTION_DIFF ) {
 				$this->doDiff( $editor );
@@ -1247,14 +1223,6 @@ class PFAutoeditAPI extends ApiBase {
 				array_push( $array, $value );
 			}
 		}
-	}
-
-	/**
-	 * Get a MessageCache depending on mediawiki version
-	 * @return MessageCache
-	 */
-	private function getMessageCache() {
-		return MediaWikiServices::getInstance()->getMessageCache();
 	}
 
 	/**

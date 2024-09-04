@@ -566,7 +566,7 @@ END;
 
 			$inputType = $formField->getInputType();
 			$gridParamValues = [ 'name' => $templateField->getFieldName() ];
-			list( $autocompletedatatype, $autocompletesettings ) = $this->getSpreadsheetAutocompleteAttributes( $formFieldArgs );
+			[ $autocompletedatatype, $autocompletesettings ] = $this->getSpreadsheetAutocompleteAttributes( $formFieldArgs );
 			if ( $formField->getLabel() !== null ) {
 				$gridParamValues['label'] = $formField->getLabel();
 			}
@@ -697,9 +697,10 @@ END;
 	 * or date input - in that case, convert it into a string.
 	 * @param array $value
 	 * @param string $delimiter
+	 * @param bool $is_autoedit
 	 * @return string
 	 */
-	static function getStringFromPassedInArray( $value, $delimiter ) {
+	static function getStringFromPassedInArray( $value, $delimiter, $is_autoedit = false ) {
 		// If it's just a regular list, concatenate it.
 		// This is needed due to some strange behavior
 		// in PF, where, if a preload page is passed in
@@ -715,7 +716,14 @@ END;
 		// - this handling will have to get more complex if other
 		// possibilities get added
 		if ( count( $value ) == 1 ) {
-			return PFUtils::getWordForYesOrNo( false );
+			// If this is part of an internal form created to
+			// do autoedit, treat a blank value as a true null,
+			// rather than as false.
+			// @TODO - it's certainly possible that this function
+			// doesn't need to be called at all, if @is_autoedit
+			// is true - and the value should simply be blank if
+			// it's an array.
+			return $is_autoedit ? '' : PFUtils::getWordForYesOrNo( false );
 		} elseif ( count( $value ) == 2 ) {
 			return PFUtils::getWordForYesOrNo( true );
 		// if it's 3 or greater, assume it's a date or datetime
@@ -771,7 +779,7 @@ END;
 					if ( $wgAmericanDates == true ) {
 						$new_value = "$month $day, $year";
 					} else {
-						$new_value = "$year/$month/$day";
+						$new_value = "$year-$month-$day";
 					}
 					// If there's a day, include whatever
 					// time information we have.
@@ -958,6 +966,7 @@ END;
 		// This is needed in order to make sure $parser->mLinkHolders
 		// is set.
 		$parser->clearState();
+		$parser->setOutputType( Parser::OT_HTML );
 
 		$form_def = PFFormUtils::getFormDefinition( $parser, $form_def, $form_id );
 
@@ -1087,7 +1096,7 @@ END;
 						$tif->setFieldValuesFromSubmit();
 					}
 
-					$tif->checkIfAllInstancesPrinted( $form_submitted, $source_is_page );
+					$tif->checkIfAllInstancesPrinted( $form_submitted, $source_is_page, $is_autoedit );
 
 					if ( !$tif->allInstancesPrinted() ) {
 						$wiki_page->addTemplate( $tif );
@@ -1103,7 +1112,7 @@ END;
 					if ( $source_is_page ) {
 						// Add any unhandled template fields
 						// in the page as hidden variables.
-						$form_text .= PFFormUtils::unhandledFieldsHTML( $tif );
+						$form_text .= PFFormUtils::unhandledFieldsHTML( $tif, $is_autoedit );
 					}
 					// Remove this tag from the $section variable.
 					$section = substr_replace( $section, '', $brackets_loc, $brackets_end_loc + 3 - $brackets_loc );
@@ -1146,7 +1155,7 @@ END;
 						$values_from_query = $autocreate_query[$tif->getTemplateName()] ?? [];
 						$cur_value = $form_field->getCurrentValue( $values_from_query, $form_submitted, $source_is_page, $tif->allInstancesPrinted(), $val_modifier );
 					} else {
-						$cur_value = $form_field->getCurrentValue( $tif->getValuesFromSubmit(), $form_submitted, $source_is_page, $tif->allInstancesPrinted(), $val_modifier );
+						$cur_value = $form_field->getCurrentValue( $tif->getValuesFromSubmit(), $form_submitted, $source_is_page, $tif->allInstancesPrinted(), $val_modifier, $is_autoedit );
 					}
 					$delimiter = $form_field->getFieldArg( 'delimiter' );
 					if ( $form_field->holdsTemplate() ) {
@@ -1297,22 +1306,23 @@ END;
 							// $generated_page_name = str_replace('.', '_', $generated_page_name);
 							$generated_page_name = str_replace( ' ', '_', $generated_page_name );
 							$escaped_input_name = str_replace( ' ', '_', $form_field->getInputName() );
-							$generated_page_name = str_ireplace( "<$escaped_input_name>", $cur_value_in_template, $generated_page_name );
+							$generated_page_name = str_ireplace( "<$escaped_input_name>",
+								$cur_value_in_template ?? '', $generated_page_name );
 							// Once the substitution is done, replace underlines back
 							// with spaces.
 							$generated_page_name = str_replace( '_', ' ', $generated_page_name );
 						}
 						if ( defined( 'CARGO_VERSION' ) && $form_field->hasFieldArg( 'mapping cargo table' ) &&
-						$form_field->hasFieldArg( 'mapping cargo field' ) && $form_field->hasFieldArg( 'mapping cargo value field' ) ) {
-								$mappingCargoTable = $form_field->getFieldArg( 'mapping cargo table' );
-								$mappingCargoField = $form_field->getFieldArg( 'mapping cargo field' );
-								$mappingCargoValueField = $form_field->getFieldArg( 'mapping cargo value field' );
-								if ( !$form_submitted && $cur_value !== null && $cur_value !== '' ) {
-									$cur_value = $this->getCargoBasedMapping( $cur_value, $mappingCargoTable, $mappingCargoField, $mappingCargoValueField, $form_field );
-								}
-								if ( $form_submitted && $cur_value_in_template !== null && $cur_value_in_template !== '' ) {
-									$cur_value_in_template = $this->getCargoBasedMapping( $cur_value_in_template, $mappingCargoTable, $mappingCargoValueField, $mappingCargoField, $form_field );
-								}
+							$form_field->hasFieldArg( 'mapping cargo field' ) && $form_field->hasFieldArg( 'mapping cargo value field' ) ) {
+							$mappingCargoTable = $form_field->getFieldArg( 'mapping cargo table' );
+							$mappingCargoField = $form_field->getFieldArg( 'mapping cargo field' );
+							$mappingCargoValueField = $form_field->getFieldArg( 'mapping cargo value field' );
+							if ( !$form_submitted && $cur_value !== null && $cur_value !== '' ) {
+								$cur_value = $this->getCargoBasedMapping( $cur_value, $mappingCargoTable, $mappingCargoField, $mappingCargoValueField, $form_field );
+							}
+							if ( $form_submitted && $cur_value_in_template !== null && $cur_value_in_template !== '' ) {
+								$cur_value_in_template = $this->getCargoBasedMapping( $cur_value_in_template, $mappingCargoTable, $mappingCargoValueField, $mappingCargoField, $form_field );
+							}
 						}
 						if ( $cur_value !== '' &&
 							( $form_field->hasFieldArg( 'mapping template' ) ||
@@ -1329,7 +1339,7 @@ END;
 									$delimiter = null;
 								}
 							}
-							$cur_value = $form_field->valueStringToLabels( $cur_value, $delimiter );
+							$cur_value = $form_field->valueStringToLabels( $cur_value, $delimiter, $form_submitted );
 						}
 
 						// Call hooks - unfortunately this has to be split into two
@@ -1463,15 +1473,15 @@ END;
 							}
 						} elseif ( count( $sub_components ) == 2 ) {
 							switch ( $sub_components[0] ) {
-							case 'label':
-								$input_label = self::getParsedValue( $parser, $sub_components[1] );
-								break;
-							case 'class':
-								$attr['class'] = $sub_components[1];
-								break;
-							case 'style':
-								$attr['style'] = Sanitizer::checkCSS( $sub_components[1] );
-								break;
+								case 'label':
+									$input_label = self::getParsedValue( $parser, $sub_components[1] );
+									break;
+								case 'class':
+									$attr['class'] = $sub_components[1];
+									break;
+								case 'style':
+									$attr['style'] = Sanitizer::checkCSS( $sub_components[1] );
+									break;
 							}
 						}
 					}
@@ -1855,7 +1865,7 @@ END;
 		// Get free text, and add to page data, as well as retroactively
 		// inserting it into the form.
 
-		if ( $page_exists ) {
+		if ( $source_is_page ) {
 			// If the page is the source, free_text will just be
 			// whatever in the page hasn't already been inserted
 			// into the form.
@@ -1919,12 +1929,7 @@ END;
 			// This variable is called $mwWikiPage and not
 			// something simpler, to avoid confusion with the
 			// variable $wiki_page, which is of type PFWikiPage.
-			if ( method_exists( MediaWikiServices::class, 'getWikiPageFactory' ) ) {
-				// MW 1.36+
-				$mwWikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $this->mPageTitle );
-			} else {
-				$mwWikiPage = WikiPage::factory( $this->mPageTitle );
-			}
+			$mwWikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $this->mPageTitle );
 			$form_text .= Html::hidden( 'wpEdittime', $mwWikiPage->getTimestamp() );
 			$form_text .= Html::hidden( 'editRevId', 0 );
 			$form_text .= Html::hidden( 'wpEditToken', $user->getEditToken() );
@@ -2135,7 +2140,7 @@ END;
 	 */
 	public static function getParsedValue( $parser, $value ) {
 		if ( !array_key_exists( $value, self::$mParsedValues ) ) {
-			self::$mParsedValues[$value] = $parser->recursiveTagParse( $value );
+			self::$mParsedValues[$value] = trim( $parser->recursiveTagParse( $value ) );
 		}
 
 		return self::$mParsedValues[$value];

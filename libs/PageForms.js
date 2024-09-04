@@ -915,15 +915,15 @@ function validateStartEndDateTimeField( startInput, endInput ) {
 
 window.validateAll = function() {
 
+	// Remove all old error messages.
+	$(".errorMessage").remove();
+
 	// Hook that fires on form submission, before the validation.
 	mw.hook('pf.formValidationBefore').fire();
 
 	var args = {numErrors: 0};
 	mw.hook('pf.formValidation').fire( args );
 	var num_errors = args.numErrors;
-
-	// Remove all old error messages.
-	$(".errorMessage").remove();
 
 	// Make sure all inputs are ignored in the "starter" instance
 	// of any multiple-instance template.
@@ -1137,7 +1137,7 @@ $.fn.possiblyMinimizeAllOpenInstances = function() {
 			valuesStr += curVal;
 		});
 		if ( valuesStr === '' ) {
-			valuesStr = '<em>No data</em>';
+			valuesStr = '<em>' + mw.msg('pf-formedit-nodata') + '</em>';
 		}
 		$instance.find('.instanceMain').fadeOut( "medium", function() {
 			$instance.find('.instanceRearranger').after('<td class="fieldValuesDisplay">' + valuesStr + '</td>');
@@ -1287,15 +1287,16 @@ $.fn.addInstance = function( addAboveCurInstance ) {
 	// of any divs and spans (presumably, these exist only for the
 	// sake of "show on select"). We do the deletions because no two
 	// elements on the page are allowed to have the same ID.
-	$new_div.find('[id!=""]').attr('data-origID', function() { return this.id; });
+	$new_div.find('[id!=""]').attr('data-origID', function() {
+		return this.id;
+	});
 	$new_div.find('div[id!=""], span[id!=""]').removeAttr('id');
 
 	$new_div.find('.hiddenByPF')
-	.removeClass('hiddenByPF')
-
-	.find('.disabledByPF')
-	.prop('disabled', false)
-	.removeClass('disabledByPF');
+		.removeClass('hiddenByPF')
+		.find('.disabledByPF')
+		.prop('disabled', false)
+		.removeClass('disabledByPF');
 
 	// Make internal ID unique for the relevant form elements, and replace
 	// the [num] index in the element names with an actual unique index
@@ -1344,7 +1345,7 @@ $.fn.addInstance = function( addAboveCurInstance ) {
 								pfdata.initFunctions[old_id][i].initFunction,
 								pfdata.initFunctions[old_id][i].parameters,
 								true //do not yet execute
-								);
+							);
 						}
 					}
 
@@ -1359,7 +1360,7 @@ $.fn.addInstance = function( addAboveCurInstance ) {
 							$(this).PageForms_registerInputValidation(
 								pfdata.validationFunctions[i].valfunction,
 								pfdata.validationFunctions[i].parameters
-								);
+							);
 						}
 					}
 				}
@@ -1504,7 +1505,9 @@ $.fn.setDependentAutocompletion = function( dependentField, baseField, baseValue
  */
 $.fn.setAutocompleteForDependentField = function( partOfMultiple ) {
 	var curValue = $(this).val();
-	if ( curValue === null ) { return this; }
+	if ( curValue === null ) {
+		return this;
+	}
 
 	var nameAttr = partOfMultiple ? 'origName' : 'name';
 	var name = $(this).attr(nameAttr);
@@ -1537,7 +1540,6 @@ $.fn.setAutocompleteForDependentField = function( partOfMultiple ) {
 			$element.setDependentAutocompletion(dependentField, name, curValue);
 		}
 	});
-
 
 	return this;
 };
