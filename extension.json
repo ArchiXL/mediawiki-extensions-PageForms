@@ -562,6 +562,9 @@
 			"targets": [
 				"desktop",
 				"mobile"
+			],
+			"dependencies": [
+				"ext.wikiEditor"
 			]
 		},
 		"ext.pageforms": {
