@@ -471,7 +471,7 @@ class PFFormField {
 			// If the number of possible values is greater than the max values to retrieve, set reverselookup to true.
 			// This enforces the use of the remote autocomplete feature for larger fields and prevents
 			// the form from loading slowly.
-			if ( count( $f->mPossibleValues ) >= PFValuesUtils::getMaxValuesToRetrieve() ) {
+			if ( count( $f->mPossibleValues ) > PFValuesUtils::getMaxValuesToRetrieve() ) {
 				$f->setFieldArg( 'reverselookup', true );
 			}
 
@@ -669,7 +669,7 @@ class PFFormField {
 
 						// This part is needed to map the values back to the original page titles.
 						// The form is submitted with "displaytitle (title)" format, so we need to map it back.
-						if ( $this->hasFieldArg( 'remote autocompletion' ) ) {
+						if ( count( $this->mPossibleValues ) >= PFValuesUtils::getMaxValuesToRetrieve()  ) {
 							$hasList = $cur_values['is_list'] ?? false;
 							// The key containing the actual title of the page
 							$cur_values = array_keys( PFMappingUtils::getLabelsForTitles( $cur_values, true ) );
@@ -751,7 +751,7 @@ class PFFormField {
 		}
 
 		$maxValues = PFValuesUtils::getMaxValuesToRetrieve();
-		if ( $formSubmitted && ( count( $this->mPossibleValues ) >= $maxValues ) ) {
+		if ( $formSubmitted && ( count( $this->mPossibleValues ) > $maxValues ) ) {
 			// Remote autocompletion.
 			$mappedValues = PFMappingUtils::getMappedValuesForInput( $values, $this->getFieldArgs() );
 			return array_values( $mappedValues );

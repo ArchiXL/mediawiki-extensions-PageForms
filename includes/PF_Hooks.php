@@ -415,7 +415,11 @@ class PFHooks {
 
 		$out->clearHTML();
 		$loadingImage = Html::element( 'img', [ 'src' => "$wgPageFormsScriptPath/skins/loading.gif" ] );
-		$text = "\t" . Html::rawElement( 'p', [ 'style' => "position: absolute; left: 45%; top: 45%;" ], $loadingImage );
+		$text = "\t" . Html::openElement( 'div', [ 'style' => 'width: 100%; min-height: 250px; position: relative; background-color: white; opacity: 0.8; z-index: 1000;' ] );
+		$text .= "\t" . Html::rawElement( 'p', [ 'style' => "position: absolute; left: 45%; top: 45%;" ], $loadingImage );
+		$text .= "\t" . Html::rawElement( 'div', [ 'style' => 'clear:both' ] );
+		$text .= "\t" . Html::closeElement( 'div' );
+
 		$reloadURL = $out->getTitle()->getFullURL();
 		$text .= Html::element( 'meta', [ 'http-equiv' => 'refresh', 'content' => "0; url=$reloadURL" ] );
 
