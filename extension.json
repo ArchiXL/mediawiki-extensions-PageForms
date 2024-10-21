@@ -1,7 +1,7 @@
 {
 	"name": "PageForms",
 	"namemsg": "pageforms-name",
-	"version": "5.6-p2",
+	"version": "5.6-p3",
 	"author": [
 		"Yaron Koren",
 		"Stephan Gambke",
@@ -688,7 +688,8 @@
 		"CargoTablesSetActionLinks": "PFHooks::addToCargoTablesRow",
 		"TinyMCEDisable": "PFHooks::disableTinyMCE",
 		"CanonicalNamespaces": "PFHooks::registerNamespaces",
-		"ResourceLoaderRegisterModules": "PFHooks::registerModules"
+		"ResourceLoaderRegisterModules": "PFHooks::registerModules",
+		"BeforePageDisplay": "PFHooks::handleForceReload"
 	},
 	"config": {
 		"PageFormsVisualEditorMaxHeight": 400,
@@ -711,6 +712,7 @@
 		"PageFormsShowTabsForAllHelperForms": true,
 		"PageFormsRunQueryFormAtTop": false,
 		"PageFormsGoogleMapsKey": null,
+		"PageFormsDelayReload": false,
 		"PageFormsShowOnSelect": [],
 		"PageFormsAutocompleteValues": [],
 		"PageFormsCalendarParams": [],

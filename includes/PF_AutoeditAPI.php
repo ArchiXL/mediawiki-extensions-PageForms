@@ -420,6 +420,8 @@ class PFAutoeditAPI extends ApiBase {
 	}
 
 	protected function doStore( EditPage $editor ) {
+		global $wgPageFormsDelayReload;
+
 		$title = $editor->getTitle();
 
 		// If they used redlink=1 and the page exists, redirect to the main article and send notice
@@ -547,7 +549,11 @@ class PFAutoeditAPI extends ApiBase {
 					if ( $returntoPage && $returntoPage->exists() && $reload ) {
 						$returntoPage->doPurge();
 					}
-					$redirect = $returnto->getFullURL();
+					if ( $wgPageFormsDelayReload ) {
+						$redirect = $returnto->getFullURL( [ 'forceReload' => 'true' ] );
+					} else {
+						$redirect = $returnto->getFullURL();
+					}
 				}
 
 				$this->getOutput()->redirect( $redirect );
@@ -588,7 +594,11 @@ class PFAutoeditAPI extends ApiBase {
 					if ( $returntoPage && $returntoPage->exists() && $reload ) {
 						$returntoPage->doPurge();
 					}
-					$redirect = $returnto->getFullURL();
+					if ( $wgPageFormsDelayReload ) {
+						$redirect = $returnto->getFullURL( [ 'forceReload' => 'true' ] );
+					} else {
+						$redirect = $returnto->getFullURL();
+					}
 				}
 
 				$this->getOutput()->redirect( $redirect );
