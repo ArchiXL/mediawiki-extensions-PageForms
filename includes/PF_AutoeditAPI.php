@@ -1032,10 +1032,15 @@ class PFAutoeditAPI extends ApiBase {
 			// Lets other code process additional form-definition syntax
 			Hooks::run( 'PageForms::WritePageData', [ $this->mOptions['form'], Title::newFromText( $this->mOptions['target'] ), &$targetContent ] );
 
+			$contextTitle = Title::newFromText( $this->mOptions['target'] );
+
+			MediaWikiServices::getInstance()->getHookContainer()->run( 'PageForms::WritePageData', [ $this->mOptions['form'], &$contextTitle, &$targetContent ] );
+
 			$editor = $this->setupEditPage( $targetContent );
 
 			// Perform the requested action.
 			if ( $this->mAction === self::ACTION_PREVIEW ) {
+				$editor->setContextTitle( $contextTitle );
 				$this->doPreview( $editor );
 			} elseif ( $this->mAction === self::ACTION_DIFF ) {
 				$this->doDiff( $editor );
