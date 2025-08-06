@@ -289,8 +289,7 @@ class PFMappingUtils {
 				// will match on (Privacy (doel)concept), (Pagina), ect
 				if ( !preg_match_all( '/\((?:[^)(]*(?R)?)*+\)/', $value, $matches ) ) {
 					$title = Title::newFromText( $value );
-					// @todo : maybe $title instanceof Title && ...?
-					if ( $title && $title->exists() ) {
+					if ( $title instanceof Title && $title->exists() ) {
 						$labels[ $value ] = $value;
 					}
 					// If no matches where found, just leave the value as is
