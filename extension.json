@@ -730,7 +730,8 @@
 		"PageFormsAutoCreateUser": null,
 		"PageFormsIgnoreTitlePattern": [],
 		"PageFormsEmbeddedTemplates": [],
-		"PageFormsEmbedQueryCacheTTL": 0
+		"PageFormsEmbedQueryCacheTTL": 0,
+		"PageFormsMaxInputAutocompleteValues": 50
 	},
 	"manifest_version": 1
 }

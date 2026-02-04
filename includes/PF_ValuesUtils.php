@@ -983,7 +983,8 @@ SERVICE wikibase:label { bd:serviceParam wikibase:language \"" . $wgLanguageCode
 			global $wgPageFormsMaxAutocompleteValues;
 			return $wgPageFormsMaxAutocompleteValues;
 		} else {
-			return 20;
+			global $wgPageFormsMaxInputAutocompleteValues;
+			return $wgPageFormsMaxInputAutocompleteValues;
 		}
 	}
 
