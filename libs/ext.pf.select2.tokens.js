@@ -421,7 +421,7 @@
 					data.pfautocomplete.forEach( function(item) {
 						if (item.displaytitle !== undefined) {
 							var displayTitle;
-							if (item.title === item.displaytitle) {
+							if (item.title.toLowerCase() === item.displaytitle.toLowerCase()) {
 								displayTitle = item.title;
 							} else {
 								var containsTitleInParentheses = item.displaytitle.indexOf("(" + item.title + ")") !== -1;
