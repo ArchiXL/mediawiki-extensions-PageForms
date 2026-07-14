@@ -424,10 +424,15 @@
 							if (item.title.toLowerCase() === item.displaytitle.toLowerCase()) {
 								displayTitle = item.title;
 							} else {
-								var containsTitleInParentheses = item.displaytitle.indexOf("(" + item.title + ")") !== -1;
-								displayTitle = containsTitleInParentheses
+								// Square brackets are used because they cannot occur in a real
+								// page title, which keeps this label format unambiguously parseable.
+								// The server-side parser reads the *last* bracket group, so only
+								// skip appending when the title is already at the very end;
+								// a display title may itself contain bracket groups elsewhere.
+								var endsWithTitleInBrackets = item.displaytitle.endsWith("[" + item.title + "]");
+								displayTitle = endsWithTitleInBrackets
 									? item.displaytitle
-									: item.displaytitle + " (" + item.title + ")";
+									: item.displaytitle + " [" + item.title + "]";
 							}
 							item.text = displayTitle;
 							item.id = displayTitle

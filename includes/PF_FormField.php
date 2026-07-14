@@ -669,7 +669,7 @@ class PFFormField {
 						}
 
 						// This part is needed to map the values back to the original page titles.
-						// The form is submitted with "displaytitle (title)" format, so we need to map it back.
+						// The form is submitted with "displaytitle [title]" format, so we need to map it back.
 						if ( count( $this->mPossibleValues ) >= PFValuesUtils::getMaxValuesToRetrieve() ) {
 							$hasList = $cur_values['is_list'] ?? false;
 							// The key containing the actual title of the page
