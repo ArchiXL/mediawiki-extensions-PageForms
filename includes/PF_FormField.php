@@ -672,6 +672,9 @@ class PFFormField {
 						// The form is submitted with "displaytitle [title]" format, so we need to map it back.
 						if ( count( $this->mPossibleValues ) >= PFValuesUtils::getMaxValuesToRetrieve() ) {
 							$hasList = $cur_values['is_list'] ?? false;
+							// The 'is_list' marker is not a value; remove it before
+							// mapping so it cannot end up as one.
+							unset( $cur_values['is_list'] );
 							// The key containing the actual title of the page
 							$cur_values = array_keys( PFMappingUtils::getLabelsForTitles( $cur_values, true ) );
 							if ( $hasList ) {
